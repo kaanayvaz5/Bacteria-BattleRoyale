@@ -14,7 +14,7 @@ public class BaseController : MonoBehaviour
     public bool inRange;
     public Transform player;
     public Transform firePoint;
-    public Transform targetE;
+    //public Transform targetE;
     public Transform[] enemiesList;
     public GameObject bullet;
     public float metabolism;
@@ -35,9 +35,10 @@ public class BaseController : MonoBehaviour
     private IEnumerator currentMoveCoroutine;
     public GameObject gameManager;
     private float initHealth;
+    //public List<FoodType> foodTypes = new List<FoodType>();
 
     // Start is called before the first frame update
-    void Start()
+    protected virtual void Start()
     {
         rb = GetComponent<Rigidbody>();
         camera = GetComponentInChildren<Camera>();
@@ -51,13 +52,18 @@ public class BaseController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    protected virtual void Update()
     {
+        if(health <= 0)
+        {
+            Destroy(gameObject);
+            Debug.Log(gameObject.name + "Died!");
+        }
         StartCoroutine(_chooseTarget());
         //GameObject.Find("GameManager").GetComponent<GameManager>().constrainZ(transform);
         energyDepletion = metabolism / 10;
         speed = (metabolism / 2) * scaleModifier;
-        maxHealth = (1 / metabolism ) * 1000;
+        maxHealth = (1 / metabolism) * 1000;
 
         if (currentMoveCoroutine != null)
         {
@@ -70,6 +76,8 @@ public class BaseController : MonoBehaviour
                 }
             }
         }
+
+
     }
 
     void OnTriggerEnter(Collider other)
@@ -77,7 +85,7 @@ public class BaseController : MonoBehaviour
         if (other.GetComponent<Food>() != null)
         {
             target = other.transform;
-            Debug.Log("Found Food");
+            // Debug.Log("Found Food");
         }
     }
 
@@ -94,16 +102,17 @@ public class BaseController : MonoBehaviour
             var food = otherObj.GetComponent<Food>();
             switch (food.foodType)
             {
-                case Food.FoodType.Ammo:
+                case Food.FoodType.AMMO:
+
                     ammo += food.foodValue;
                     break;
-                case Food.FoodType.Armour:
+                case Food.FoodType.ARMOUR:
                     armor += food.foodValue;
                     break;
-                case Food.FoodType.Energy:
+                case Food.FoodType.ENERGY:
                     energy += food.foodValue;
                     break;
-                case Food.FoodType.Health:
+                case Food.FoodType.HEALTH:
                     if (health < maxHealth)
                     {
                         health += food.foodValue;
@@ -111,16 +120,16 @@ public class BaseController : MonoBehaviour
                         {
                             var ratio = (health / maxHealth);
                             scaleModifier = (1 / metabolism) * 10 * ratio;
-                            gameObject.transform.localScale += new Vector3(scaleModifier, scaleModifier,scaleModifier);
+                            gameObject.transform.localScale += new Vector3(scaleModifier, scaleModifier, scaleModifier);
 
-                            if(gameObject.transform.localScale.x < maxSize / 4)
+                            if (gameObject.transform.localScale.x < maxSize / 4)
                             {
-                                camera.transform.position += new Vector3(0, 0.5f,0);
+                                //camera.transform.position += new Vector3(0, 0.5f, 0);
                             }
                         }
                     }
                     break;
-                case Food.FoodType.Metabolism:
+                case Food.FoodType.METABOLISM:
                     if (food.negative)
                     {
                         if (metabolism > 1)
@@ -133,7 +142,7 @@ public class BaseController : MonoBehaviour
                     {
                         if (metabolism < 20)
                         {
-                            metabolism += food.foodValue; 
+                            metabolism += food.foodValue;
                         }
                         //gameObject.transform.localScale = new Vector3(transform.localScale.x - scaleModifier, transform.localScale.y - scaleModifier,transform.localScale.z - scaleModifier);
                     }
@@ -144,6 +153,8 @@ public class BaseController : MonoBehaviour
             target = null;
         }
     }
+
+
 
     public IEnumerator _loseEnergy()
     {
@@ -194,12 +205,16 @@ public class BaseController : MonoBehaviour
 
         foreach (Transform enemy in enemiesList)
         {
-            float distanceToEnemy = Vector3.Distance(player.transform.position, enemy.transform.position);
-
-            if (distanceToEnemy < shortestRange)
+            if (enemy != null)
             {
-                shortestRange = distanceToEnemy;
-                closestEnemy = enemy;
+                float distanceToEnemy = Vector3.Distance(player.transform.position, enemy.transform.position);
+
+                if (distanceToEnemy < shortestRange)
+                {
+                    shortestRange = distanceToEnemy;
+                    closestEnemy = enemy;
+                    //Debug.Log(distanceToEnemy + enemy.gameObject.name);
+                }
             }
         }
 
@@ -208,47 +223,56 @@ public class BaseController : MonoBehaviour
             inRange = true;
             target = closestEnemy.transform;
             firePoint.LookAt(target);
+
+            yield return new WaitForSeconds(.5f);
+            ShootEnemy();
+
         }
         else
         {
             inRange = false;
             target = null;
         }
-        yield return new WaitForSeconds(1f);
     }
-    /*
-    public IEnumerator _idle()
-    {
-        while (idle)
+
+   
+        /*
+        public IEnumerator _idle()
         {
-            var pos = new Vector3(0, 0, 0);
-            var timeTo = 0f;
-
-            if (target != null)
+            while (idle)
             {
-                pos = target.transform.position;
-                if (currentMoveCoroutine != null)
-                {
-                    StopCoroutine(currentMoveCoroutine);
-                }
-                currentMoveCoroutine = _move(pos);
-                yield return StartCoroutine(currentMoveCoroutine);
-            }
-            else
-            {
-                pos = new Vector3(Random.Range(-10, 30), Random.Range(-10, 30), 0);
-                timeTo = (Vector3.Distance(transform.position, pos) / speed);
+                var pos = new Vector3(0, 0, 0);
+                var timeTo = 0f;
 
-                if (currentMoveCoroutine != null)
+                if (target != null)
                 {
-                    StopCoroutine(currentMoveCoroutine);
+                    pos = target.transform.position;
+                    if (currentMoveCoroutine != null)
+                    {
+                        StopCoroutine(currentMoveCoroutine);
+                    }
+                    currentMoveCoroutine = _move(pos);
+                    yield return StartCoroutine(currentMoveCoroutine);
                 }
-                currentMoveCoroutine = _move(pos);
-                StartCoroutine(currentMoveCoroutine);
+                else
+                {
+                    pos = new Vector3(Random.Range(-10, 30), Random.Range(-10, 30), 0);
+                    timeTo = (Vector3.Distance(transform.position, pos) / speed);
 
-                yield return new WaitForSeconds(timeTo);
+                    if (currentMoveCoroutine != null)
+                    {
+                        StopCoroutine(currentMoveCoroutine);
+                    }
+                    currentMoveCoroutine = _move(pos);
+                    StartCoroutine(currentMoveCoroutine);
+
+                    yield return new WaitForSeconds(timeTo);
+                }
             }
         }
-    }
-    */
+        */
 }
+
+
+
+

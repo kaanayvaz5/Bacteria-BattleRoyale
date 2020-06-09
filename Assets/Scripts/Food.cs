@@ -4,19 +4,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
+
+
+
 public class Food : MonoBehaviour
 {
+
     public enum FoodType
     {
-        Metabolism,
-        Health,
-        Ammo,
-        Armour,
-        Energy
+        METABOLISM,
+        HEALTH,
+        AMMO,
+        ARMOUR,
+        ENERGY
     }
-
     public FoodType foodType;
-    public int foodValue = 5;
+    public float foodValue = 5f;
     public bool negative = false;
     private Renderer renderer;
     public GameObject cam;
@@ -58,7 +61,6 @@ public class Food : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         //GameObject.Find("GameManager").GetComponent<GameManager>().constrainZ(transform);
     }
 }
